@@ -7,6 +7,7 @@ type EntryDetailProps = {
   onGoPrev: () => void
   onGoNext: () => void
   onEditEntry: (entry: JournalEntry) => void
+  variant?: 'panel' | 'sheet'
 }
 
 export function EntryDetail({
@@ -16,9 +17,10 @@ export function EntryDetail({
   onGoPrev,
   onGoNext,
   onEditEntry,
+  variant = 'panel',
 }: EntryDetailProps) {
   return (
-    <aside className="detail-panel">
+    <aside className={`detail-panel ${variant === 'sheet' ? 'detail-panel--sheet' : ''}`}>
       <div className="detail-panel__header">
         <div>
           <p className="panel__eyebrow">Entry Detail</p>

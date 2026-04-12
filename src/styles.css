@@ -42,6 +42,20 @@ button {
   padding: 20px;
 }
 
+.desktop-header {
+  display: block;
+}
+
+.mobile-topbar,
+.mobile-secondary-actions {
+  display: none;
+}
+
+.entry-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
 .timeline-header {
   display: flex;
   gap: 20px;
@@ -160,17 +174,19 @@ button {
 
 .timeline-shell {
   position: relative;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .timeline-viewport {
   height: 100%;
+  min-height: 0;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 20px 24px 28px;
   cursor: grab;
   user-select: none;
-  touch-action: pan-x;
+  touch-action: none;
 }
 
 .timeline-viewport.is-dragging {
@@ -179,12 +195,13 @@ button {
 
 .timeline-track {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 12px;
-  min-height: 100%;
 }
 
 .timeline-column {
+  display: flex;
+  flex-direction: column;
   position: relative;
   width: 228px;
   min-width: 228px;
@@ -222,7 +239,8 @@ button {
 }
 
 .timeline-column__body {
-  height: calc(100% - 52px);
+  flex: 1 1 auto;
+  height: auto;
   min-height: 320px;
   margin-left: 12px;
   padding: 8px 12px 18px 10px;
@@ -370,6 +388,14 @@ button {
   overflow-y: auto;
 }
 
+.detail-panel--sheet {
+  width: min(100%, 720px);
+  max-height: min(78vh, 720px);
+  margin: auto auto 0;
+  border-radius: 18px 18px 0 0;
+  background: #faf6f0;
+}
+
 .detail-panel--empty {
   display: flex;
   flex-direction: column;
@@ -442,6 +468,11 @@ button {
   background: rgba(44, 30, 18, 0.3);
 }
 
+.overlay--sheet {
+  align-items: end;
+  padding: 0;
+}
+
 .panel {
   width: min(680px, 100%);
   max-height: calc(100vh - 48px);
@@ -452,6 +483,13 @@ button {
 }
 
 .panel--form {
+  padding: 18px;
+}
+
+.panel--sheet {
+  width: 100%;
+  max-height: min(72vh, 640px);
+  border-radius: 18px 18px 0 0;
   padding: 18px;
 }
 
@@ -501,6 +539,46 @@ button {
   font-size: 0.9rem;
 }
 
+.form-error {
+  margin: 0;
+  color: #9f3f31;
+  font-size: 0.92rem;
+}
+
+.sheet-section {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.sheet-section > span {
+  color: #7d6750;
+  font-size: 0.82rem;
+}
+
+.sheet-option-list {
+  display: grid;
+  gap: 10px;
+}
+
+.sheet-option-list button {
+  border: 1px solid rgba(92, 74, 53, 0.14);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(253, 248, 242, 0.92);
+  color: #4b3a28;
+  text-align: left;
+}
+
+.sheet-option-list button.is-active {
+  background: #4e3927;
+  color: #f7f1ea;
+}
+
+.sheet-option-list--compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .entry-form__actions {
   display: flex;
   justify-content: flex-end;
@@ -517,17 +595,91 @@ button {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .app-shell {
     padding: 14px;
   }
 
-  .timeline-header,
-  .timeline-nav {
-    flex-direction: column;
+  .desktop-header {
+    display: none;
   }
 
-  .timeline-controls {
-    justify-content: flex-start;
+  .mobile-topbar {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 14px;
+    border: 1px solid rgba(92, 74, 53, 0.18);
+    border-radius: 4px;
+    background: rgba(255, 251, 245, 0.82);
+  }
+
+  .mobile-topbar__brand h1 {
+    margin: 0;
+    font-size: 1.45rem;
+  }
+
+  .mobile-period-button,
+  .mobile-display-button {
+    border: 1px solid rgba(92, 74, 53, 0.16);
+    border-radius: 14px;
+    background: rgba(253, 248, 242, 0.92);
+    color: #4b3a28;
+    padding: 12px 14px;
+    text-align: left;
+  }
+
+  .mobile-record-button {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .mobile-entry-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mobile-edit-button {
+    flex: 0 0 auto;
+    border: 1px solid rgba(92, 74, 53, 0.16);
+    background: rgba(253, 248, 242, 0.92);
+  }
+
+  .timeline-page {
+    margin-top: 0;
+  }
+
+  .timeline-nav {
+    display: none;
+  }
+
+  .timeline-main {
+    height: clamp(420px, 58svh, 680px);
+    min-height: 420px;
+  }
+
+  .timeline-viewport {
+    overflow-y: auto;
+    padding: 16px 18px 20px;
+  }
+
+  .mobile-secondary-actions {
+    display: block;
+    padding: 0 18px 18px;
+  }
+
+  .mobile-display-button {
+    width: 100%;
+  }
+
+  .detail-panel--sheet .detail-panel__nav {
+    position: sticky;
+    top: 0;
+    padding-bottom: 10px;
+    background: #faf6f0;
+  }
+
+  .sheet-option-list--compact {
+    grid-template-columns: 1fr;
   }
 }

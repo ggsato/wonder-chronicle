@@ -8,7 +8,8 @@ type TimelineHeaderProps = {
   onJumpToToday: () => void
   onJumpToLatest: () => void
   onJumpToEarliest: () => void
-  onOpenEntryForm: () => void
+  onOpenCreateEntryForm: () => void
+  onOpenEditEntryForm: () => void
 }
 
 export function TimelineHeader({
@@ -19,7 +20,8 @@ export function TimelineHeader({
   onJumpToToday,
   onJumpToLatest,
   onJumpToEarliest,
-  onOpenEntryForm,
+  onOpenCreateEntryForm,
+  onOpenEditEntryForm,
 }: TimelineHeaderProps) {
   return (
     <header className="timeline-header">
@@ -82,9 +84,14 @@ export function TimelineHeader({
           </button>
         </div>
 
-        <button className="record-button" onClick={onOpenEntryForm} type="button">
-          記録する
-        </button>
+        <div className="entry-actions">
+          <button className="ghost-button" onClick={onOpenEditEntryForm} type="button">
+            編集する
+          </button>
+          <button className="record-button" onClick={onOpenCreateEntryForm} type="button">
+            追加する
+          </button>
+        </div>
       </div>
     </header>
   )

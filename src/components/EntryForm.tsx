@@ -5,13 +5,15 @@ import type { EntryPhoto, JournalEntry } from '../types'
 type EntryFormProps = {
   initialDate: string
   existingEntry?: JournalEntry
-  onSave: (entry: JournalEntry) => void
+  mode: 'create' | 'edit'
+  onSave: (entry: JournalEntry) => string | undefined
   onCancel: () => void
 }
 
 export function EntryForm({
   initialDate,
   existingEntry,
+  mode,
   onSave,
   onCancel,
 }: EntryFormProps) {
@@ -20,6 +22,7 @@ export function EntryForm({
   const [wonderAt, setWonderAt] = useState(existingEntry?.wonderAt ?? '')
   const [wonderAbout, setWonderAbout] = useState(existingEntry?.wonderAbout ?? '')
   const [photos, setPhotos] = useState<EntryPhoto[]>(existingEntry?.photos ?? [])
+  const [errorMessage, setErrorMessage] = useState<string>()
   const pendingObjectUrlsRef = useRef<string[]>([])
 
   useEffect(() => {
@@ -28,6 +31,7 @@ export function EntryForm({
     setWonderAt(existingEntry?.wonderAt ?? '')
     setWonderAbout(existingEntry?.wonderAbout ?? '')
     setPhotos(existingEntry?.photos ?? [])
+    setErrorMessage(undefined)
 
     for (const url of pendingObjectUrlsRef.current) {
       URL.revokeObjectURL(url)
@@ -59,15 +63,21 @@ export function EntryForm({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    pendingObjectUrlsRef.current = []
-    onSave({
+    const nextEntry = {
       id: existingEntry?.id ?? date,
       date,
       wish: wish.trim(),
       wonderAt: wonderAt.trim(),
       wonderAbout: wonderAbout.trim(),
       photos,
-    })
+    }
+    const error = onSave(nextEntry)
+    if (error) {
+      setErrorMessage(error)
+      return
+    }
+
+    pendingObjectUrlsRef.current = []
   }
 
   return (
@@ -76,7 +86,7 @@ export function EntryForm({
         <div className="panel__header">
           <div>
             <p className="panel__eyebrow">Entry Form</p>
-            <h2>{existingEntry ? '同日の記録を更新' : '記録する'}</h2>
+            <h2>{mode === 'edit' ? '記録を編集する' : '記録を追加する'}</h2>
           </div>
           <button className="panel__close" onClick={onCancel} type="button">
             閉じる
@@ -139,6 +149,8 @@ export function EntryForm({
               <span className="photo-strip__empty">写真は最大3枚まで</span>
             )}
           </div>
+
+          {errorMessage ? <p className="form-error">{errorMessage}</p> : null}
 
           <div className="entry-form__actions">
             <button className="ghost-button" onClick={onCancel} type="button">
