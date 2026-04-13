@@ -1,10 +1,10 @@
-import type { DirectionMode, Granularity } from '../types'
+import type { DirectionMode, TimelineMode } from '../types'
 
 type TimelineHeaderProps = {
   directionMode: DirectionMode
-  granularity: Granularity
+  timelineMode: TimelineMode
   onChangeDirectionMode: (mode: DirectionMode) => void
-  onChangeGranularity: (granularity: Granularity) => void
+  onChangeTimelineMode: (mode: TimelineMode) => void
   onJumpToToday: () => void
   onJumpToLatest: () => void
   onJumpToEarliest: () => void
@@ -14,9 +14,9 @@ type TimelineHeaderProps = {
 
 export function TimelineHeader({
   directionMode,
-  granularity,
+  timelineMode,
   onChangeDirectionMode,
-  onChangeGranularity,
+  onChangeTimelineMode,
   onJumpToToday,
   onJumpToLatest,
   onJumpToEarliest,
@@ -50,25 +50,32 @@ export function TimelineHeader({
 
         <div className="control-group" aria-label="粒度">
           <button
-            className={granularity === 'day' ? 'is-active' : ''}
-            onClick={() => onChangeGranularity('day')}
+            className={timelineMode === 'day' ? 'is-active' : ''}
+            onClick={() => onChangeTimelineMode('day')}
             type="button"
           >
             日
           </button>
           <button
-            className={granularity === 'week' ? 'is-active' : ''}
-            onClick={() => onChangeGranularity('week')}
+            className={timelineMode === 'week' ? 'is-active' : ''}
+            onClick={() => onChangeTimelineMode('week')}
             type="button"
           >
             週
           </button>
           <button
-            className={granularity === 'month' ? 'is-active' : ''}
-            onClick={() => onChangeGranularity('month')}
+            className={timelineMode === 'month' ? 'is-active' : ''}
+            onClick={() => onChangeTimelineMode('month')}
             type="button"
           >
             月
+          </button>
+          <button
+            className={timelineMode === 'change-points' ? 'is-active' : ''}
+            onClick={() => onChangeTimelineMode('change-points')}
+            type="button"
+          >
+            変化点
           </button>
         </div>
 

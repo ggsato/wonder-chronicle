@@ -4,6 +4,7 @@ import { EntryForm } from './components/EntryForm'
 import { TimelineHeader } from './components/TimelineHeader'
 import { TimelineViewport } from './components/TimelineViewport'
 import { sampleEntries } from './data/sampleEntries'
+import { generateChangePoints, toChangePointColumns } from './lib/ai'
 import { todayInTokyo } from './lib/date'
 import {
   aggregateEntries,
@@ -20,6 +21,8 @@ import type {
   InitialAnchor,
   JournalEntry,
   PeriodSelectionMap,
+  ChangePoint,
+  TimelineMode,
   ViewState,
 } from './types'
 
@@ -27,6 +30,7 @@ const initialViewState: ViewState = {
   layoutMode: 'scroll',
   directionMode: 'recent-right',
   granularity: 'day',
+  timelineMode: 'day',
   initialAnchor: 'today',
   focusedPeriodIds: {},
 }
@@ -49,6 +53,10 @@ export default function App() {
   const [isGranularitySheetOpen, setIsGranularitySheetOpen] = useState(false)
   const [isDisplaySheetOpen, setIsDisplaySheetOpen] = useState(false)
   const [isMobileLayout, setIsMobileLayout] = useState(() => getIsMobileLayout())
+  const [changePoints, setChangePoints] = useState<ChangePoint[]>([])
+  const [isGeneratingChangePoints, setIsGeneratingChangePoints] = useState(false)
+  const [changePointError, setChangePointError] = useState<string>()
+  const [changePointStatusMessage, setChangePointStatusMessage] = useState<string>()
   const latestEntriesRef = useRef(entries)
 
   const periods = useMemo(
@@ -64,13 +72,24 @@ export default function App() {
     [entries],
   )
   const columns = useMemo(() => toColumnViewModels(periods), [periods])
+  const changePointColumns = useMemo(() => toChangePointColumns(changePoints), [changePoints])
   const renderedColumns = useMemo(
-    () => toRenderedColumns(columns, viewState.directionMode),
-    [columns, viewState.directionMode],
+    () =>
+      toRenderedColumns(
+        viewState.timelineMode === 'change-points' ? changePointColumns : columns,
+        viewState.directionMode,
+      ),
+    [changePointColumns, columns, viewState.directionMode, viewState.timelineMode],
   )
 
   useEffect(() => {
     latestEntriesRef.current = entries
+  }, [entries])
+
+  useEffect(() => {
+    setChangePoints([])
+    setChangePointError(undefined)
+    setChangePointStatusMessage(undefined)
   }, [entries])
 
   useEffect(() => {
@@ -201,6 +220,28 @@ export default function App() {
     setIsGranularitySheetOpen(false)
   }
 
+  const handleChangeTimelineMode = (mode: TimelineMode) => {
+    if (mode === 'change-points') {
+      setViewState((current) => ({ ...current, timelineMode: mode }))
+      setDetailPeriodId(undefined)
+      setIsGranularitySheetOpen(false)
+      if (changePoints.length === 0 && !isGeneratingChangePoints) {
+        const shouldGenerate = window.confirm(
+          '変化点年表を生成しますか？\n\n既存の記録群から変化の節目を抽出します。',
+        )
+        if (shouldGenerate) {
+          void handleGenerateChangePoints()
+        } else {
+          setChangePointStatusMessage('未生成です。必要になったら再度 `変化点` モードを開いてください。')
+        }
+      }
+      return
+    }
+
+    setViewState((current) => ({ ...current, timelineMode: mode }))
+    handleChangeGranularity(mode)
+  }
+
   const handleJump = (anchor: 'today' | 'latest' | 'earliest') => {
     const targetPeriodId = resolveAnchorPeriodId(periods, viewState.granularity, anchor)
     const nextSelections = syncPeriodSelections(
@@ -284,15 +325,39 @@ export default function App() {
   const detailEntries = detailPeriod
     ? entries.filter((entry) => detailPeriod.entryIds.includes(entry.id))
     : []
+  const handleGenerateChangePoints = async () => {
+    setIsGeneratingChangePoints(true)
+    setChangePointError(undefined)
+    setChangePointStatusMessage('変化点を生成しています…')
+
+    try {
+      const nextChangePoints = await generateChangePoints(entries)
+      setChangePoints(nextChangePoints)
+      if (nextChangePoints.length === 0) {
+        setChangePointStatusMessage(
+          '変化点は抽出されませんでした。記録を増やしてから再試行してください。',
+        )
+      } else {
+        setChangePointStatusMessage(`${nextChangePoints.length}件の変化点を抽出しました。`)
+      }
+    } catch (error) {
+      setChangePointError(
+        error instanceof Error ? error.message : '変化点の生成に失敗しました。',
+      )
+      setChangePointStatusMessage(undefined)
+    } finally {
+      setIsGeneratingChangePoints(false)
+    }
+  }
 
   return (
     <div className="app-shell">
       <div className="desktop-header">
         <TimelineHeader
           directionMode={viewState.directionMode}
-          granularity={viewState.granularity}
+          timelineMode={viewState.timelineMode}
           onChangeDirectionMode={handleChangeDirectionMode}
-          onChangeGranularity={handleChangeGranularity}
+          onChangeTimelineMode={handleChangeTimelineMode}
           onJumpToToday={() => handleJump('today')}
           onJumpToLatest={() => handleJump('latest')}
           onJumpToEarliest={() => handleJump('earliest')}
@@ -307,7 +372,7 @@ export default function App() {
           <h1>Wonder Chronicle</h1>
         </div>
         <button className="mobile-period-button" onClick={handleOpenGranularitySheet} type="button">
-          {currentPeriodLabel}
+          {viewState.timelineMode === 'change-points' ? '変化点年表' : currentPeriodLabel}
         </button>
         <div className="mobile-entry-actions">
           <button className="ghost-button mobile-edit-button" onClick={handleOpenEditEntryForm} type="button">
@@ -319,20 +384,39 @@ export default function App() {
         </div>
       </section>
 
-      <main className="timeline-page">
+      <main
+        className={`timeline-page ${
+          viewState.timelineMode === 'change-points' ? 'timeline-page--single' : ''
+        }`}
+      >
         <section className="timeline-main">
           <div className="timeline-nav">
             <span className="timeline-nav__label">Selected Period</span>
-            <strong>{currentPeriodLabel}</strong>
-            <p>{viewState.directionMode === 'recent-right' ? '右が現在' : '右が過去'}</p>
+            <strong>
+              {viewState.timelineMode === 'change-points' ? '変化点年表' : currentPeriodLabel}
+            </strong>
+            <p>
+              {viewState.timelineMode === 'change-points' && changePointError ? (
+                <span className="timeline-nav__sub timeline-nav__sub--error">{changePointError}</span>
+              ) : null}
+              {viewState.timelineMode === 'change-points' && !changePointError && changePointStatusMessage ? (
+                <span className="timeline-nav__sub">{changePointStatusMessage}</span>
+              ) : null}
+              {viewState.directionMode === 'recent-right' ? '右が現在' : '右が過去'}
+            </p>
           </div>
 
           <TimelineViewport
             columns={renderedColumns}
             directionMode={viewState.directionMode}
-            centeredPeriodId={selectedPeriodId}
-            selectedPeriodId={selectedPeriodId}
+            centeredPeriodId={viewState.timelineMode === 'change-points' ? undefined : selectedPeriodId}
+            selectedPeriodId={viewState.timelineMode === 'change-points' ? undefined : selectedPeriodId}
+            selectable={viewState.timelineMode !== 'change-points'}
             onSelectPeriod={(periodId) => {
+              if (viewState.timelineMode === 'change-points') {
+                return
+              }
+
               const nextSelections = syncPeriodSelections(
                 viewState.granularity,
                 periodId,
@@ -348,16 +432,22 @@ export default function App() {
               setDetailPeriodId(nextSelections[viewState.granularity] ?? periodId)
             }}
             onVisiblePeriodChange={(periodId) =>
-              setVisiblePeriodIds((current) =>
-                current[viewState.granularity] === periodId
-                  ? current
-                  : {
-                      ...current,
-                      [viewState.granularity]: periodId,
-                    },
-              )
+              viewState.timelineMode === 'change-points'
+                ? undefined
+                : setVisiblePeriodIds((current) =>
+                    current[viewState.granularity] === periodId
+                      ? current
+                      : {
+                          ...current,
+                          [viewState.granularity]: periodId,
+                        },
+                  )
             }
           />
+
+          {viewState.timelineMode === 'change-points' && isGeneratingChangePoints ? (
+            <div className="timeline-status-banner">変化点を生成しています…</div>
+          ) : null}
 
           <div className="mobile-secondary-actions">
             <button className="ghost-button mobile-display-button" onClick={handleOpenDisplaySheet} type="button">
@@ -366,7 +456,7 @@ export default function App() {
           </div>
         </section>
 
-        {!isMobileLayout && detailPeriod ? (
+        {!isMobileLayout && viewState.timelineMode !== 'change-points' && detailPeriod ? (
           <EntryDetail
             entries={detailEntries}
             onBack={() => setDetailPeriodId(undefined)}
@@ -411,7 +501,7 @@ export default function App() {
             }}
             period={detailPeriod}
           />
-        ) : !isMobileLayout ? (
+        ) : !isMobileLayout && viewState.timelineMode !== 'change-points' ? (
           <aside className="detail-panel detail-panel--empty">
             <p className="panel__eyebrow">Detail</p>
             <h2>期間を開く</h2>
@@ -448,14 +538,21 @@ export default function App() {
             <div className="sheet-option-list">
               {GRANULARITIES.map((granularity) => (
                 <button
-                  className={viewState.granularity === granularity ? 'is-active' : ''}
+                  className={viewState.timelineMode === granularity ? 'is-active' : ''}
                   key={granularity}
-                  onClick={() => handleChangeGranularity(granularity)}
+                  onClick={() => handleChangeTimelineMode(granularity)}
                   type="button"
                 >
                   {granularity === 'day' ? '日' : granularity === 'week' ? '週' : '月'}
                 </button>
               ))}
+              <button
+                className={viewState.timelineMode === 'change-points' ? 'is-active' : ''}
+                onClick={() => handleChangeTimelineMode('change-points')}
+                type="button"
+              >
+                変化点
+              </button>
             </div>
           </div>
         </div>
@@ -508,11 +605,27 @@ export default function App() {
                 </button>
               </div>
             </div>
+
+            {viewState.timelineMode === 'change-points' ? (
+              <div className="sheet-section">
+                <span>AI</span>
+                <div className="sheet-option-list">
+                  <button onClick={handleGenerateChangePoints} type="button">
+                    {isGeneratingChangePoints ? '生成中…' : '変化点を生成'}
+                  </button>
+                  {changePointError ? (
+                    <p className="sheet-message is-error">{changePointError}</p>
+                  ) : changePointStatusMessage ? (
+                    <p className="sheet-message">{changePointStatusMessage}</p>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
 
-      {isMobileLayout && detailPeriod ? (
+      {isMobileLayout && viewState.timelineMode !== 'change-points' && detailPeriod ? (
         <div className="overlay overlay--sheet">
           <EntryDetail
             entries={detailEntries}

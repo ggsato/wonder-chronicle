@@ -10,16 +10,20 @@ Wonder Chronicle is a vertical Japanese self-chronicle MVP. The current build fo
 - Anchor jumps: `today` / `latest` / `earliest`
 - Minimal entry form with local image upload
 - Minimal detail panel for the selected period
+- AI-powered `change-point timeline` as a timeline mode
 - `1 day = 1 entry` update behavior
 
 ## Getting Started
 
 ```bash
 npm install
+export OPENAI_API_KEY=your_api_key_here
 npm run dev
 ```
 
 The dev server is configured for LAN access at `http://192.168.11.52:5173`.
+
+If `OPENAI_API_KEY` is not set, the main timeline still works and the change-point timeline shows an unavailable state instead of breaking the UI. When the user switches to `change-point timeline`, the app asks whether it should generate change points instead of keeping a permanent generate button in the header.
 
 Production build:
 
@@ -31,6 +35,7 @@ npm run build
 
 - Spec source of truth: [docs/specs/wonder-chronicle-mvp.md](docs/specs/wonder-chronicle-mvp.md)
 - Implementation decision log: [docs/decisions/2026-04-12-mvp-implementation.md](docs/decisions/2026-04-12-mvp-implementation.md)
+- AI change-point decision log: [docs/decisions/2026-04-13-ai-change-point-timeline.md](docs/decisions/2026-04-13-ai-change-point-timeline.md)
 
 ## Spec And Docs Workflow
 

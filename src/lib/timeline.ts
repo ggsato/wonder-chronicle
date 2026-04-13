@@ -88,6 +88,7 @@ export function toColumnViewModels(
     id: period.id,
     periodId: period.id,
     granularity: period.granularity,
+    kind: 'period',
     periodLabel: period.periodLabel,
     summaryTitle: period.summaryTitle,
     wishText: truncate(period.representativeWish, period.granularity === 'day' ? 72 : 88),

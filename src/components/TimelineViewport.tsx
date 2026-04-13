@@ -7,6 +7,7 @@ type TimelineViewportProps = {
   directionMode: DirectionMode
   centeredPeriodId?: string
   selectedPeriodId?: string
+  selectable?: boolean
   onSelectPeriod: (periodId: string) => void
   onVisiblePeriodChange: (periodId: string) => void
 }
@@ -16,6 +17,7 @@ export function TimelineViewport({
   directionMode,
   centeredPeriodId,
   selectedPeriodId,
+  selectable = true,
   onSelectPeriod,
   onVisiblePeriodChange,
 }: TimelineViewportProps) {
@@ -166,7 +168,7 @@ export function TimelineViewport({
 
       if (dragState.moved) {
         event.preventDefault()
-      } else if (dragState.targetPeriodId) {
+      } else if (selectable && dragState.targetPeriodId) {
         onSelectPeriod(dragState.targetPeriodId)
       }
 
@@ -252,7 +254,7 @@ export function TimelineViewport({
         return
       }
 
-      if (!touchState.moved && touchState.targetPeriodId) {
+      if (selectable && !touchState.moved && touchState.targetPeriodId) {
         onSelectPeriod(touchState.targetPeriodId)
       }
 
@@ -270,7 +272,7 @@ export function TimelineViewport({
       viewport.removeEventListener('touchend', finishTouch)
       viewport.removeEventListener('touchcancel', finishTouch)
     }
-  }, [onSelectPeriod])
+  }, [onSelectPeriod, selectable])
 
   return (
     <div className="timeline-shell">
@@ -280,9 +282,8 @@ export function TimelineViewport({
             <TimelineColumn
               key={column.id}
               column={column}
-              granularity={column.granularity}
-              isFocused={column.periodId === selectedPeriodId}
-              onClick={() => onSelectPeriod(column.periodId)}
+              isFocused={selectable && column.periodId === selectedPeriodId}
+              onClick={selectable ? () => onSelectPeriod(column.periodId) : () => undefined}
             />
           ))}
         </div>

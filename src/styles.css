@@ -133,6 +133,10 @@ button {
   margin-top: 18px;
 }
 
+.timeline-page--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .timeline-main,
 .detail-panel {
   min-height: 72vh;
@@ -170,6 +174,16 @@ button {
 .timeline-nav__sub {
   color: #9a866f;
   font-size: 0.85rem;
+}
+
+.timeline-nav__sub--error {
+  color: #9f3f31;
+}
+
+.timeline-status-banner {
+  padding: 10px 18px 14px;
+  color: #7d6750;
+  font-size: 0.92rem;
 }
 
 .timeline-shell {
@@ -221,6 +235,11 @@ button {
   min-width: 296px;
 }
 
+.timeline-column--change-point {
+  width: 248px;
+  min-width: 248px;
+}
+
 .timeline-column__rule {
   position: absolute;
   inset: 8px auto 8px 0;
@@ -262,9 +281,28 @@ button {
   flex: 1 1 auto;
 }
 
+.timeline-column__content--change-point {
+  justify-content: flex-end;
+}
+
 .timeline-column--focused .timeline-column__body {
   background:
     linear-gradient(180deg, rgba(117, 88, 58, 0.08), rgba(117, 88, 58, 0.02));
+}
+
+.timeline-column--focused .timeline-column__meta {
+  border-inline-start-color: rgba(78, 57, 39, 0.55);
+}
+
+.timeline-column--focused .timeline-column__label {
+  background: #4e3927;
+  color: #f7f1ea;
+  border-color: #4e3927;
+}
+
+.timeline-column--focused .timeline-column__rule {
+  width: 2px;
+  background: rgba(78, 57, 39, 0.7);
 }
 
 .timeline-column__section {
@@ -383,6 +421,21 @@ button {
   flex-basis: 42px;
 }
 
+.timeline-column__section--change-point {
+  width: 54px;
+  flex-basis: 54px;
+}
+
+.timeline-column--change-point .timeline-column__body {
+  min-height: 360px;
+}
+
+.timeline-column--change-point.timeline-column--focused .timeline-column__body {
+  background:
+    linear-gradient(180deg, rgba(78, 57, 39, 0.12), rgba(78, 57, 39, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(78, 57, 39, 0.18);
+}
+
 .detail-panel {
   padding: 18px;
   overflow-y: auto;
@@ -412,6 +465,16 @@ button {
 .detail-panel__summary {
   margin: 8px 0 0;
   color: #7d6750;
+}
+
+.detail-panel__status {
+  margin: 18px 0 0;
+  color: #6f5945;
+}
+
+.detail-panel__status--error,
+.sheet-message.is-error {
+  color: #9f3f31;
 }
 
 .detail-panel__hero {
@@ -573,6 +636,11 @@ button {
 .sheet-option-list button.is-active {
   background: #4e3927;
   color: #f7f1ea;
+}
+
+.sheet-message {
+  margin: 0;
+  color: #6f5945;
 }
 
 .sheet-option-list--compact {
