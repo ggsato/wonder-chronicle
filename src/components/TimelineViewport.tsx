@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef } from 'react'
 import type { DirectionMode, TimelineColumnViewModel } from '../types'
 import { TimelineColumn } from './TimelineColumn'
 
@@ -8,6 +8,8 @@ type TimelineViewportProps = {
   centeredPeriodId?: string
   selectedPeriodId?: string
   selectable?: boolean
+  enableMouseDrag?: boolean
+  overlayContent?: ReactNode
   onSelectPeriod: (periodId: string) => void
   onVisiblePeriodChange: (periodId: string) => void
 }
@@ -18,6 +20,8 @@ export function TimelineViewport({
   centeredPeriodId,
   selectedPeriodId,
   selectable = true,
+  enableMouseDrag = true,
+  overlayContent,
   onSelectPeriod,
   onVisiblePeriodChange,
 }: TimelineViewportProps) {
@@ -124,6 +128,10 @@ export function TimelineViewport({
     }
 
     const handlePointerDown = (event: PointerEvent) => {
+      if (!enableMouseDrag) {
+        return
+      }
+
       if (event.pointerType !== 'mouse') {
         return
       }
@@ -190,7 +198,7 @@ export function TimelineViewport({
       viewport.removeEventListener('pointerup', finishDrag)
       viewport.removeEventListener('pointercancel', finishDrag)
     }
-  }, [])
+  }, [enableMouseDrag, onSelectPeriod, selectable])
 
   useEffect(() => {
     const viewport = viewportRef.current
@@ -288,6 +296,7 @@ export function TimelineViewport({
           ))}
         </div>
       </div>
+      {overlayContent ? <div className="timeline-shell__overlay">{overlayContent}</div> : null}
     </div>
   )
 }

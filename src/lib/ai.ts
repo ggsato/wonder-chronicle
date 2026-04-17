@@ -3,7 +3,7 @@ import type { ChangePoint, JournalEntry } from '../types'
 type ChangePointApiResponse = {
   changePoints: Array<{
     date: string
-    text: string
+    title: string
   }>
 }
 
@@ -11,13 +11,16 @@ type ChangePointApiError = {
   error?: string
 }
 
-export async function generateChangePoints(entries: JournalEntry[]): Promise<ChangePoint[]> {
+export async function generateChangePoints(
+  entries: JournalEntry[],
+  maxCount: number,
+): Promise<ChangePoint[]> {
   const response = await fetch('/api/change-points', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ entries }),
+    body: JSON.stringify({ entries, maxCount }),
   })
 
   if (!response.ok) {
@@ -31,7 +34,7 @@ export async function generateChangePoints(entries: JournalEntry[]): Promise<Cha
   return changePoints.map((point, index) => ({
     id: `${point.date}-${index}`,
     date: point.date,
-    text: point.text,
+    title: point.title,
   }))
 }
 
@@ -42,10 +45,10 @@ export function toChangePointColumns(changePoints: ChangePoint[]) {
     granularity: 'change-point' as const,
     kind: 'change-point' as const,
     periodLabel: point.date,
-    summaryTitle: '変化点',
+    summaryTitle: point.title,
     wishText: '',
     wonderAtText: '',
-    wonderAboutText: point.text,
+    wonderAboutText: '',
     hasPhoto: false,
     entryCount: 1,
   }))

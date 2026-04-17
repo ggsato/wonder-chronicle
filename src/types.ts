@@ -25,7 +25,7 @@ export type JournalEntry = {
 export type ChangePoint = {
   id: string
   date: string
-  text: string
+  title: string
 }
 
 export type AggregatedPeriod = {

@@ -39,6 +39,7 @@ const anchorForMvp = (anchor: InitialAnchor): 'today' | 'latest' | 'earliest' =>
   anchor === 'last-view' ? 'today' : anchor
 
 const GRANULARITIES: Granularity[] = ['day', 'week', 'month']
+const CHANGE_POINT_COUNT_OPTIONS = [3, 5, 10] as const
 const MOBILE_BREAKPOINT = 767
 type EntryFormMode = 'create' | 'edit'
 
@@ -57,6 +58,8 @@ export default function App() {
   const [isGeneratingChangePoints, setIsGeneratingChangePoints] = useState(false)
   const [changePointError, setChangePointError] = useState<string>()
   const [changePointStatusMessage, setChangePointStatusMessage] = useState<string>()
+  const [changePointCount, setChangePointCount] = useState<(typeof CHANGE_POINT_COUNT_OPTIONS)[number]>(5)
+  const [isChangePointDialogOpen, setIsChangePointDialogOpen] = useState(false)
   const latestEntriesRef = useRef(entries)
 
   const periods = useMemo(
@@ -90,6 +93,7 @@ export default function App() {
     setChangePoints([])
     setChangePointError(undefined)
     setChangePointStatusMessage(undefined)
+    setIsChangePointDialogOpen(false)
   }, [entries])
 
   useEffect(() => {
@@ -226,14 +230,7 @@ export default function App() {
       setDetailPeriodId(undefined)
       setIsGranularitySheetOpen(false)
       if (changePoints.length === 0 && !isGeneratingChangePoints) {
-        const shouldGenerate = window.confirm(
-          '変化点年表を生成しますか？\n\n既存の記録群から変化の節目を抽出します。',
-        )
-        if (shouldGenerate) {
-          void handleGenerateChangePoints()
-        } else {
-          setChangePointStatusMessage('未生成です。必要になったら再度 `変化点` モードを開いてください。')
-        }
+        handleOpenChangePointDialog()
       }
       return
     }
@@ -317,6 +314,11 @@ export default function App() {
     setIsDisplaySheetOpen(true)
   }
 
+  const handleOpenChangePointDialog = () => {
+    setChangePointError(undefined)
+    setIsChangePointDialogOpen(true)
+  }
+
   const currentPeriodLabel = focusedPeriod?.periodLabel ?? '年表を準備中'
   const currentPeriodIndex = getPeriodIndexById(periods, detailPeriodId ?? focusedPeriod?.id)
   const detailPeriod = detailPeriodId
@@ -328,17 +330,22 @@ export default function App() {
   const handleGenerateChangePoints = async () => {
     setIsGeneratingChangePoints(true)
     setChangePointError(undefined)
-    setChangePointStatusMessage('変化点を生成しています…')
+    setChangePointStatusMessage(
+      `既存の記録群から最大${changePointCount}件の変化の節目を抽出しています。`,
+    )
+    setIsChangePointDialogOpen(false)
 
     try {
-      const nextChangePoints = await generateChangePoints(entries)
+      const nextChangePoints = await generateChangePoints(entries, changePointCount)
       setChangePoints(nextChangePoints)
       if (nextChangePoints.length === 0) {
         setChangePointStatusMessage(
           '変化点は抽出されませんでした。記録を増やしてから再試行してください。',
         )
       } else {
-        setChangePointStatusMessage(`${nextChangePoints.length}件の変化点を抽出しました。`)
+        setChangePointStatusMessage(
+          `${nextChangePoints.length}件の変化点を抽出しました。`,
+        )
       }
     } catch (error) {
       setChangePointError(
@@ -411,9 +418,47 @@ export default function App() {
             directionMode={viewState.directionMode}
             centeredPeriodId={viewState.timelineMode === 'change-points' ? undefined : selectedPeriodId}
             selectedPeriodId={viewState.timelineMode === 'change-points' ? undefined : selectedPeriodId}
-            selectable={viewState.timelineMode !== 'change-points'}
+            selectable
+            enableMouseDrag={viewState.timelineMode !== 'change-points'}
+            overlayContent={
+              viewState.timelineMode === 'change-points' && isGeneratingChangePoints ? (
+                <div className="timeline-loading-card">
+                  <p className="panel__eyebrow">Generating</p>
+                  <h2>変化点を生成しています</h2>
+                  <p>既存の記録群から変化の節目を抽出しています。しばらくお待ちください。</p>
+                </div>
+              ) : undefined
+            }
             onSelectPeriod={(periodId) => {
               if (viewState.timelineMode === 'change-points') {
+                const clickedPoint = changePoints.find((point) => point.id === periodId)
+                if (!clickedPoint) {
+                  return
+                }
+
+                const nextDayPeriodId = `day:${clickedPoint.date}`
+                if (!periodsByGranularity.day.some((period) => period.id === nextDayPeriodId)) {
+                  return
+                }
+
+                const nextSelections = syncPeriodSelections(
+                  'day',
+                  nextDayPeriodId,
+                  viewState.focusedPeriodIds,
+                  periodsByGranularity,
+                )
+
+                setViewState((current) => ({
+                  ...current,
+                  timelineMode: 'day',
+                  granularity: 'day',
+                  initialAnchor: 'latest',
+                  focusedPeriodIds: nextSelections,
+                }))
+                setVisiblePeriodIds(nextSelections)
+                setDetailPeriodId(nextDayPeriodId)
+                setIsDisplaySheetOpen(false)
+                setIsGranularitySheetOpen(false)
                 return
               }
 
@@ -444,10 +489,6 @@ export default function App() {
                   )
             }
           />
-
-          {viewState.timelineMode === 'change-points' && isGeneratingChangePoints ? (
-            <div className="timeline-status-banner">変化点を生成しています…</div>
-          ) : null}
 
           <div className="mobile-secondary-actions">
             <button className="ghost-button mobile-display-button" onClick={handleOpenDisplaySheet} type="button">
@@ -610,8 +651,8 @@ export default function App() {
               <div className="sheet-section">
                 <span>AI</span>
                 <div className="sheet-option-list">
-                  <button onClick={handleGenerateChangePoints} type="button">
-                    {isGeneratingChangePoints ? '生成中…' : '変化点を生成'}
+                  <button onClick={handleOpenChangePointDialog} type="button">
+                    {isGeneratingChangePoints ? '生成中…' : '抽出条件を開く'}
                   </button>
                   {changePointError ? (
                     <p className="sheet-message is-error">{changePointError}</p>
@@ -672,6 +713,72 @@ export default function App() {
             period={detailPeriod}
             variant="sheet"
           />
+        </div>
+      ) : null}
+
+      {isChangePointDialogOpen ? (
+        <div className="overlay">
+          <div className="panel panel--dialog">
+            <div className="panel__header">
+              <div>
+                <p className="panel__eyebrow">Change Points</p>
+                <h2>変化点年表を生成する</h2>
+              </div>
+              <button
+                className="panel__close"
+                onClick={() => {
+                  setIsChangePointDialogOpen(false)
+                  setChangePointStatusMessage(
+                    '未生成です。必要になったら再度 `変化点` モードを開いてください。',
+                  )
+                }}
+                type="button"
+              >
+                閉じる
+              </button>
+            </div>
+
+            <div className="sheet-section">
+              <span>説明</span>
+              <p className="dialog-copy">
+                既存の記録群から最大{changePointCount}件の変化の節目を抽出します。
+              </p>
+            </div>
+
+            <div className="sheet-section">
+              <span>抽出件数</span>
+              <div className="control-group">
+                {CHANGE_POINT_COUNT_OPTIONS.map((count) => (
+                  <button
+                    className={changePointCount === count ? 'is-active' : ''}
+                    key={count}
+                    onClick={() => setChangePointCount(count)}
+                    type="button"
+                  >
+                    {count}件
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="entry-form__actions">
+              <button
+                className="ghost-button"
+                onClick={() => {
+                  setIsChangePointDialogOpen(false)
+                  setChangePointStatusMessage(
+                    '未生成です。必要になったら再度 `変化点` モードを開いてください。',
+                  )
+                }}
+                type="button"
+              >
+                いまは生成しない
+              </button>
+              <button className="primary-button" onClick={() => void handleGenerateChangePoints()} type="button">
+                生成する
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
     </div>

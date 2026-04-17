@@ -62,6 +62,11 @@ type ChangePointEntry = {
   wonderAbout: string
 }
 
+type ChangePointRequestBody = {
+  entries?: ChangePointEntry[]
+  maxCount?: number
+}
+
 type OpenAIResponseBody = {
   output_text?: string
   output?: Array<{
@@ -90,8 +95,9 @@ function createChangePointHandler(): ChangePointHandler {
     }
 
     try {
-      const payload = await readJsonBody<{ entries?: ChangePointEntry[] }>(req)
+      const payload = await readJsonBody<ChangePointRequestBody>(req)
       const entries = payload.entries ?? []
+      const maxCount = normalizeMaxCount(payload.maxCount)
 
       if (entries.length === 0) {
         writeJson(res, 200, { changePoints: [] })
@@ -113,7 +119,7 @@ function createChangePointHandler(): ChangePointHandler {
                 {
                   type: 'input_text',
                   text:
-                    'You are editing a Japanese personal chronology. Read the entries and extract up to five change points. Each change point must be grounded in the entries, concise, and written in Japanese. Return only the structured result.',
+                    `You are editing a Japanese personal chronology. Read the entries and extract up to ${maxCount} change points. Each change point must be grounded in the entries, concise, and written in Japanese. Each point must have a short retrospective title only. Do not invent facts. Return only the structured result.`,
                 },
               ],
             },
@@ -137,13 +143,14 @@ function createChangePointHandler(): ChangePointHandler {
                 properties: {
                   changePoints: {
                     type: 'array',
+                    maxItems: maxCount,
                     items: {
                       type: 'object',
                       properties: {
                         date: { type: 'string' },
-                        text: { type: 'string' },
+                        title: { type: 'string' },
                       },
-                      required: ['date', 'text'],
+                      required: ['date', 'title'],
                       additionalProperties: false,
                     },
                   },
@@ -181,7 +188,7 @@ function createChangePointHandler(): ChangePointHandler {
       }
 
       const parsed = JSON.parse(outputText) as {
-        changePoints?: Array<{ date: string; text: string }>
+        changePoints?: Array<{ date: string; title: string }>
       }
 
       writeJson(res, 200, { changePoints: parsed.changePoints ?? [] })
@@ -256,4 +263,8 @@ function extractRefusal(responseBody: OpenAIResponseBody): string | undefined {
   }
 
   return undefined
+}
+
+function normalizeMaxCount(value: number | undefined): number {
+  return value === 3 || value === 10 ? value : 5
 }

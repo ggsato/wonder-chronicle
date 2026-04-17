@@ -192,6 +192,30 @@ button {
   min-height: 0;
 }
 
+.timeline-shell__overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: none;
+}
+
+.timeline-loading-card {
+  width: min(440px, 100%);
+  padding: 20px 22px;
+  border: 1px solid rgba(92, 74, 53, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 251, 245, 0.95);
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(79, 59, 39, 0.08);
+}
+
+.timeline-loading-card p {
+  margin: 10px 0 0;
+  color: #6f5945;
+}
+
 .timeline-viewport {
   height: 100%;
   min-height: 0;
@@ -282,7 +306,21 @@ button {
 }
 
 .timeline-column__content--change-point {
-  justify-content: flex-end;
+  justify-content: center;
+  align-items: center;
+}
+
+.timeline-column__copy--change-point {
+  flex: 0 0 auto;
+  min-height: auto;
+}
+
+.timeline-column__copy--change-point p {
+  font-size: 1.02rem;
+  line-height: 1.72;
+  font-weight: 600;
+  color: #4f3928;
+  text-align: center;
 }
 
 .timeline-column--focused .timeline-column__body {
@@ -422,12 +460,30 @@ button {
 }
 
 .timeline-column__section--change-point {
-  width: 54px;
-  flex-basis: 54px;
+  width: auto;
+  flex: 1 1 auto;
+  align-items: center;
 }
 
 .timeline-column--change-point .timeline-column__body {
   min-height: 360px;
+  justify-content: center;
+  align-items: center;
+  margin-left: 0;
+  padding: 18px 18px 24px;
+  border-inline-start: 0;
+}
+
+.timeline-column--change-point .timeline-column__meta {
+  margin-left: 0;
+  justify-content: center;
+  border-inline-start: 0;
+  padding-inline: 0;
+  text-align: center;
+}
+
+.timeline-column--change-point .timeline-column__rule {
+  display: none;
 }
 
 .timeline-column--change-point.timeline-column--focused .timeline-column__body {
@@ -556,6 +612,11 @@ button {
   padding: 18px;
 }
 
+.panel--dialog {
+  width: min(560px, 100%);
+  padding: 18px;
+}
+
 .panel__header {
   display: flex;
   justify-content: space-between;
@@ -639,6 +700,11 @@ button {
 }
 
 .sheet-message {
+  margin: 0;
+  color: #6f5945;
+}
+
+.dialog-copy {
   margin: 0;
   color: #6f5945;
 }

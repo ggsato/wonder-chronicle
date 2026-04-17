@@ -23,7 +23,7 @@ npm run dev
 
 The dev server is configured for LAN access at `http://192.168.11.52:5173`.
 
-If `OPENAI_API_KEY` is not set, the main timeline still works and the change-point timeline shows an unavailable state instead of breaking the UI. When the user switches to `change-point timeline`, the app asks whether it should generate change points instead of keeping a permanent generate button in the header.
+If `OPENAI_API_KEY` is not set, the main timeline still works and the change-point timeline shows an unavailable state instead of breaking the UI. When the user switches to `change-point timeline`, the app opens a dialog where the user can choose `3 / 5 / 10` extraction count before generating. Generated change points act as retrospective links back into the corresponding `day` view.
 
 Production build:
 

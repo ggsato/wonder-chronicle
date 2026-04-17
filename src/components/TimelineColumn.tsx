@@ -26,7 +26,7 @@ export function TimelineColumn({
 
       <div className="timeline-column__meta">
         <span className="timeline-column__label">{column.periodLabel}</span>
-        {column.summaryTitle ? (
+        {column.kind !== 'change-point' && column.summaryTitle ? (
           <span className="timeline-column__summary">{column.summaryTitle}</span>
         ) : null}
       </div>
@@ -39,8 +39,8 @@ export function TimelineColumn({
                 <span>変</span>
                 <span>化</span>
               </span>
-              <div className="timeline-column__copy">
-                <p>{column.wonderAboutText}</p>
+              <div className="timeline-column__copy timeline-column__copy--change-point">
+                <p>{column.summaryTitle}</p>
               </div>
             </div>
           </div>
